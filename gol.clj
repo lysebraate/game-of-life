@@ -1,12 +1,12 @@
 (load-file "./patterns.clj")
 
-(defn to-bool [grid]
+#_ (defn to-bool [grid]
 	(vec (for [rows grid]
 		(vec (for [cell rows]
 			(if (= cell 1) true false))))))	
 
-(defn print-symbol [cell]
-	(if (true? cell) "#" " "))
+(defn print-symbol [cell-value]
+	(if (= 1 cell-value) "#" " "))
 
 (defn print-row [cells]
 	(print "\r") 
@@ -22,13 +22,13 @@
 	(nth (nth grid x nil) y nil))
 
 (defn has-life [[x y] grid]
-	(true? (get-cell x y grid)))
+	(= 1 (get-cell x y grid)))
 
 (defn has-life-cells [cells grid]
 	(for [cell cells]
 		(has-life cell grid)))
 
-(defn get-neighbors [x y grid]
+(defn get-neighbors-cord [x y grid]
 	(list [(- x 1)(- y 1)], 
 				[x (- y 1)], 
 				[(+ x 1) (- y 1)], 
@@ -38,32 +38,22 @@
 				[x (+ y 1)], 
 				[(+ x 1) (+ y 1)]))
 
+(defn get-neighbors-values [x y grid]
+	(map (fn [[x1 y1]] (get-cell x1 y1 grid)) (get-neighbors-cord x y grid)))
+
 (defn has-num-alive-neighbors [neighbors num]
-	(= (count (filter true? neighbors)) num))
+	(= (count (filter #(= 1 %) neighbors)) num))
 
-(defn has-exactly-three-living-neighbors [x y grid]
-	(let [neighbors (has-life-cells (get-neighbors x y grid) grid)]
-		(has-num-alive-neighbors neighbors 3)))
-
-(defn has-two-or-three-neighbors [x y grid]
-	(let [neighbors (has-life-cells (get-neighbors x y grid) grid)]
-		(or (has-num-alive-neighbors neighbors 2) (has-num-alive-neighbors neighbors 3))))
-
-(defn evolve-single-cell [[x y] old-grid]
-	(cond
-		(has-life [x y] old-grid) (has-two-or-three-neighbors x y old-grid)
-		:default (has-exactly-three-living-neighbors x y old-grid)))
-
-(comment (defn evolve [grid]
-	(vec (take (count grid) (for [i (iterate inc 0)] 
-		(vec (take (count (get grid 0)) (for [j (iterate inc 0)] 
-			(evolve-single-cell [i j] grid)))))))))
+(defn evolve-single-cell [x y old-grid]
+	(let [neighbors-values (get-neighbors-values x y old-grid) 
+				has-three-neighbors (has-num-alive-neighbors neighbors-values 3)]
+	(if (has-life [x y] old-grid) (if (or has-three-neighbors (has-num-alive-neighbors neighbors-values 2)) 1 0)
+		(if has-three-neighbors 1 0))))
 
 (defn evolve [grid]
 	(map-indexed (fn [i row] 
 		(map-indexed (fn [j cell]
-			(println "side-effect") 
-			(evolve-single-cell [i j] grid)) 
+			(evolve-single-cell i j grid)) 
 			row))
 		grid))
 
@@ -72,6 +62,6 @@
 	(print-grid grid)
 	(recur (evolve grid)))
 
-(defn initialize [pattern] 
+(defn init [pattern] 
 	(println "Initializing game of life...")
-	(agent (start-ticker (to-bool pattern))))
+	(agent (start-ticker pattern)))

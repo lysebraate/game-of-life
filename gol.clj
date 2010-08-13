@@ -19,7 +19,7 @@
 		(print-row row)))
 
 (defn get-cell [x y grid]
-	(get (get grid x) y))
+	(nth (nth grid x nil) y nil))
 
 (defn has-life [[x y] grid]
 	(true? (get-cell x y grid)))
@@ -54,10 +54,18 @@
 		(has-life [x y] old-grid) (has-two-or-three-neighbors x y old-grid)
 		:default (has-exactly-three-living-neighbors x y old-grid)))
 
-(defn evolve [grid]
+(comment (defn evolve [grid]
 	(vec (take (count grid) (for [i (iterate inc 0)] 
 		(vec (take (count (get grid 0)) (for [j (iterate inc 0)] 
-			(evolve-single-cell [i j] grid))))))))
+			(evolve-single-cell [i j] grid)))))))))
+
+(defn evolve [grid]
+	(map-indexed (fn [i row] 
+		(map-indexed (fn [j cell]
+			(println "side-effect") 
+			(evolve-single-cell [i j] grid)) 
+			row))
+		grid))
 
 (defn start-ticker [grid]
 	(Thread/sleep 100)
